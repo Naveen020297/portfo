@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { Bloom, ChromaticAberration, EffectComposer, Vignette } from "@react-three/postprocessing";
+import type { BloomEffect, VignetteEffect } from "postprocessing";
 import * as THREE from "three";
 import { build, store, type Tier } from "@/lib/store";
+import { useTheme } from "@/lib/theme";
 
 /* ───────────── helpers ───────────── */
 
@@ -34,7 +36,11 @@ export function useMetals() {
   return metals;
 }
 
-/** Energy-seam material that powers up as station `index` finishes assembling. */
+/**
+ * Energy-seam material that powers up as station `index` finishes assembling.
+ * Warming up, it stutters irregularly like a tube striking, rather than strobing on a fixed beat.
+ * On the light theme it settles at its true colour instead of blowing out to white.
+ */
 export function useGlow(color: string, index: number, boost = 3) {
   const { mat, base } = useMemo(() => {
     const base = new THREE.Color(color);
@@ -43,8 +49,10 @@ export function useGlow(color: string, index: number, boost = 3) {
   useEffect(() => () => mat.dispose(), [mat]);
   useFrame(({ clock }) => {
     const b = build(index);
-    const flicker = b < 1 ? (Math.sin(clock.elapsedTime * 60) > 0 ? 1 : 0.4) : 1;
-    mat.color.copy(base).multiplyScalar(0.05 + b ** 3 * boost * flicker + store.pulse * 2);
+    const stutter = rnd(Math.floor(clock.elapsedTime * 13) + index * 17);
+    const flicker = b > 0.35 && b < 0.97 ? (stutter > 0.35 ? 1 : 0.2 + stutter) : 1;
+    const peak = THREE.MathUtils.lerp(boost, 1.05, store.light);
+    mat.color.copy(base).multiplyScalar(0.05 + b ** 3 * peak * flicker + store.pulse * 2);
   });
   return mat;
 }
@@ -62,11 +70,14 @@ const pool = {
   dirty: false,
 };
 const tmpC = new THREE.Color();
+const white = new THREE.Color("#fff7d6");
 
 /** Fire a burst of welding sparks at a world position. */
 export function emitSparks(at: THREE.Vector3, count: number, color: string, power = 1) {
   const n = Math.round(count * (store.tier === 0 ? 0.3 : store.tier === 1 ? 0.6 : 1));
-  tmpC.set(color).lerp(new THREE.Color("#fff7d6"), 0.5).multiplyScalar(5);
+  // White-hot on dark; on light, a saturated ember that still reads against the pale sky.
+  if (store.light > 0.5) tmpC.set(color).multiplyScalar(0.85);
+  else tmpC.set(color).lerp(white, 0.5).multiplyScalar(5);
   for (let k = 0; k < n; k++) {
     const i = pool.head++ % MAX_SPARKS;
     pool.p.set([at.x, at.y, at.z], i * 3);
@@ -81,6 +92,7 @@ export function emitSparks(at: THREE.Vector3, count: number, color: string, powe
 }
 
 export function Sparks() {
+  const light = useTheme() === "light";
   const ref = useRef<THREE.InstancedMesh>(null);
   const t = useMemo(() => ({ m: new THREE.Matrix4(), q: new THREE.Quaternion(), s: new THREE.Vector3(), p: new THREE.Vector3(), d: new THREE.Vector3(), z: new THREE.Vector3(0, 0, 1), c: new THREE.Color() }), []);
 
@@ -131,7 +143,7 @@ export function Sparks() {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, MAX_SPARKS]} frustumCulled={false}>
       <boxGeometry args={[0.018, 0.018, 0.22]} />
-      <meshBasicMaterial toneMapped={false} blending={THREE.AdditiveBlending} depthWrite={false} transparent />
+      <meshBasicMaterial toneMapped={false} blending={light ? THREE.NormalBlending : THREE.AdditiveBlending} depthWrite={false} transparent />
     </instancedMesh>
   );
 }
@@ -208,10 +220,15 @@ export function Plate({
 
 /* ───────────── lighting + post ───────────── */
 
-/** Studio lighting baked once into a cube map: gives the metal real reflections, no HDR download. */
+/**
+ * Studio lighting baked once into a cube map: gives the metal real reflections, no HDR download.
+ * Light theme re-bakes it inside a bright cyclorama so the metal picks up a daylight sheen.
+ */
 export function StudioEnv() {
+  const light = useTheme() === "light";
   return (
-    <Environment resolution={128} frames={1}>
+    <Environment key={light ? "light" : "dark"} resolution={128} frames={1}>
+      {light && <color attach="background" args={["#2a303b"]} />}
       <Lightformer form="rect" intensity={2.5} position={[0, 5, 6]} scale={[14, 4, 1]} />
       <Lightformer form="rect" intensity={5} color="#22d3ee" position={[-9, 1, 0]} rotation-y={Math.PI / 2} scale={[24, 1.2, 1]} />
       <Lightformer form="rect" intensity={5} color="#8b5cf6" position={[9, -1, 0]} rotation-y={-Math.PI / 2} scale={[24, 1.2, 1]} />
@@ -221,19 +238,30 @@ export function StudioEnv() {
   );
 }
 
-/** Bloom (energy glow), velocity-driven chromatic aberration and a lens vignette. Off on low tier. */
+/**
+ * Bloom (energy glow), velocity-driven chromatic aberration and a lens vignette. Off on low tier.
+ * A pale sky sits right at the bloom threshold, so the light theme lifts it and softens the vignette.
+ */
 export function Effects({ tier }: { tier: Tier }) {
   const offset = useMemo(() => new THREE.Vector2(0.0005, 0.0003), []);
+  const bloom = useRef<BloomEffect>(null);
+  const vignette = useRef<VignetteEffect>(null);
   useFrame(() => {
     const k = 0.0004 + Math.abs(store.vel) * 0.0045 + store.pulse * 0.006 + store.shake * 0.008;
     offset.set(k, k * 0.6);
+    const l = store.light;
+    if (bloom.current) {
+      bloom.current.intensity = THREE.MathUtils.lerp(1.1, 0.35, l);
+      bloom.current.luminanceMaterial.threshold = THREE.MathUtils.lerp(0.9, 1.15, l);
+    }
+    if (vignette.current) vignette.current.darkness = THREE.MathUtils.lerp(0.7, 0.12, l);
   });
   if (tier === 0) return null;
   return (
     <EffectComposer multisampling={tier === 2 ? 4 : 0} enableNormalPass={false}>
-      <Bloom mipmapBlur intensity={1.25} luminanceThreshold={0.9} luminanceSmoothing={0.2} radius={0.72} />
+      <Bloom ref={bloom} mipmapBlur intensity={1.1} luminanceThreshold={0.9} luminanceSmoothing={0.2} radius={0.72} />
       <ChromaticAberration offset={offset} radialModulation={false} modulationOffset={0} />
-      <Vignette darkness={0.7} offset={0.22} />
+      <Vignette ref={vignette} darkness={0.7} offset={0.22} />
     </EffectComposer>
   );
 }

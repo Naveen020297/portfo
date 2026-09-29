@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { RoundedBox } from "@react-three/drei";
+import { Html, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
-import { OFFERINGS } from "@/lib/content";
-import { build, rel, store, type Tier } from "@/lib/store";
+import { OFFERINGS, PROCESS, STACK } from "@/lib/content";
+import { activity, build, htmlLayer, rel, store, type Tier } from "@/lib/store";
+import { useTheme } from "@/lib/theme";
 import { Plate, backOut, emitSparks, useGlow, useMetals } from "./fx";
 import { Callout, Packets } from "./parts";
 import Robot, { aim, headingTo, type Act, type Rig } from "./Robot";
@@ -672,13 +673,339 @@ export function OfferStation({ tier }: { tier: Tier }) {
   );
 }
 
-/* ───────────── 05 · Contact: an armoured portal ───────────── */
+/* ───────────── 05 · How we work: an assembly rail with one exhibit per stage ───────────── */
+const STEP_X = [-2.1, -0.7, 0.7, 2.1];
+const PROC = 5;
+
+/** The four exhibits: a scanner, blueprint slabs, a cube that assembles itself, and a radar. */
+function Exhibit({ i, glow, spin }: { i: number; glow: THREE.Material; spin: React.RefObject<THREE.Group | null> }) {
+  const { gun, dark, chrome } = useMetals();
+  const seed = 500 + i * 20;
+  switch (i) {
+    case 0:
+      return (
+        <group ref={spin}>
+          <Plate index={PROC} seed={seed} delay={0.2} spark={PROCESS[0].color}>
+            <mesh material={chrome} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.34, 0.03, 10, 48]} />
+            </mesh>
+          </Plate>
+          <Plate index={PROC} seed={seed + 1} delay={0.28} rotation={[1.05, 0, 0.4]}>
+            <mesh material={gun}>
+              <torusGeometry args={[0.26, 0.025, 10, 48]} />
+            </mesh>
+          </Plate>
+          <Plate index={PROC} seed={seed + 2} delay={0.36}>
+            <mesh material={glow}>
+              <octahedronGeometry args={[0.11, 0]} />
+            </mesh>
+          </Plate>
+        </group>
+      );
+    case 1:
+      return (
+        <group ref={spin}>
+          {[0, 1, 2].map((k) => (
+            <Plate key={k} index={PROC} seed={seed + k} delay={0.22 + k * 0.08} from={[0, 2.5 + k, 0]} spin={0.1} position={[k * 0.07 - 0.07, k * 0.13, k * -0.05]} spark={k === 2 ? PROCESS[1].color : undefined}>
+              <mesh material={k % 2 ? chrome : dark}>
+                <boxGeometry args={[0.62, 0.05, 0.46]} />
+              </mesh>
+              <mesh material={glow} position={[0, 0, 0.232]}>
+                <boxGeometry args={[0.5, 0.012, 0.01]} />
+              </mesh>
+            </Plate>
+          ))}
+        </group>
+      );
+    case 2:
+      return (
+        <group ref={spin}>
+          {Array.from({ length: 8 }, (_, k) => {
+            const x = (k & 1 ? 1 : -1) * 0.125;
+            const y = (k & 2 ? 1 : -1) * 0.125 + 0.14;
+            const z = (k & 4 ? 1 : -1) * 0.125;
+            return (
+              <Plate key={k} index={PROC} seed={seed + k} delay={0.2 + k * 0.05} spread={2.5} position={[x, y, z]} spark={k % 3 === 0 ? PROCESS[2].color : undefined}>
+                <mesh material={k % 2 ? chrome : gun}>
+                  <boxGeometry args={[0.22, 0.22, 0.22]} />
+                </mesh>
+              </Plate>
+            );
+          })}
+          <mesh material={glow} position={[0, 0.14, 0]}>
+            <boxGeometry args={[0.1, 0.1, 0.1]} />
+          </mesh>
+        </group>
+      );
+    default:
+      return (
+        <group>
+          <Plate index={PROC} seed={seed} delay={0.2} spark={PROCESS[3].color}>
+            <mesh material={gun}>
+              <cylinderGeometry args={[0.1, 0.16, 0.16, 16]} />
+            </mesh>
+          </Plate>
+          <group ref={spin} position={[0, 0.1, 0]}>
+            <Plate index={PROC} seed={seed + 1} delay={0.3} rotation={[-0.6, 0, 0]} position={[0, 0.16, 0]}>
+              <mesh material={chrome}>
+                <cylinderGeometry args={[0.04, 0.36, 0.18, 28, 1, true]} />
+              </mesh>
+              <mesh material={glow} position={[0, 0.02, 0]}>
+                <boxGeometry args={[0.55, 0.012, 0.03]} />
+              </mesh>
+            </Plate>
+          </group>
+        </group>
+      );
+  }
+}
+
+export function ProcessStation({ tier }: { tier: Tier }) {
+  const { gun, chrome } = useMetals();
+  const sway = useSway(PROC, 0, 0.3);
+  const glows = PROCESS.map((p) => useGlow(p.color, PROC, 3)); // eslint-disable-line react-hooks/rules-of-hooks
+  const railGlow = useGlow(C.cyan, PROC, 1.3);
+  const packetMat = useGlow("#bfefff", PROC, 2);
+  const pedestals = useRef<(THREE.Group | null)[]>([]);
+  const exhibits = useRef<(THREE.Group | null)[]>([]);
+  const spins = [useRef<THREE.Group>(null), useRef<THREE.Group>(null), useRef<THREE.Group>(null), useRef<THREE.Group>(null)];
+  const rings = useRef<(THREE.Mesh | null)[]>([]);
+  const packets = useRef<(THREE.Mesh | null)[]>([]);
+  const at = useMemo(() => new THREE.Vector3(), []);
+  const wp = useMemo(() => new THREE.Vector3(), []);
+  const was = useRef(-1);
+
+  // Guide: walks the rail one stage at a time; a hovered step calls it straight over to present that exhibit.
+  const act: Act = useMemo(
+    () => (rig, { t }) => {
+      const hot = store.hoveredStep;
+      const i = hot >= 0 ? hot : Math.floor(t / 5) % STEP_X.length;
+      rig.goal.x = STEP_X[i] * 1.2;
+      pedestals.current[i]?.getWorldPosition(at);
+      at.y += 0.8;
+      rig.faceYaw = headingTo(rig, at, 1.2);
+      rig.pose.look = at;
+      if (rig.moving) return;
+      if (hot >= 0) {
+        const right = rig.root.worldToLocal(at.clone()).x > 0;
+        aim(rig, right ? "r" : "l", at);
+        if (right) rig.pose.gripR = 1;
+        else rig.pose.gripL = 1;
+        rig.pose.brows = 0.5;
+        rig.pose.eyes = 1.2;
+      } else rig.pose.brows = 0.1;
+    },
+    [at],
+  );
+
+  useFrame(({ clock }, dt) => {
+    const t = clock.elapsedTime;
+    const hot = store.hoveredStep;
+    exhibits.current.forEach((g, i) => {
+      if (!g) return;
+      const k = (g.userData.k = damp(g.userData.k ?? 0, hot === i ? 1 : 0, 6, dt));
+      g.position.y = 0.42 + k * 0.3 + Math.sin(t * 1.4 + i) * 0.025;
+      const sp = spins[i].current;
+      if (sp) sp.rotation.y += dt * (i === 3 ? 1.6 : 0.5 + k * 2.4);
+      const ring = rings.current[i];
+      if (ring) ring.scale.setScalar(1 + k * 0.22);
+    });
+    if (hot !== was.current && hot >= 0) {
+      exhibits.current[hot]?.getWorldPosition(wp);
+      emitSparks(wp, 22, PROCESS[hot].color, 0.7);
+    }
+    was.current = hot;
+    // Work items travel down the rail, stage to stage.
+    packets.current.forEach((m, j) => {
+      if (!m) return;
+      const k = (t * 0.16 + j / packets.current.length) % 1;
+      m.position.x = THREE.MathUtils.lerp(STEP_X[0], STEP_X[3], k);
+      m.scale.setScalar(0.05 + Math.sin(k * Math.PI) * 0.06);
+    });
+  });
+
+  return (
+    <>
+      <Robot index={PROC} home={[-2.4, -2.05, 1.9]} enter={[-4.5, 0, 0.3]} faceYaw={0.5} accent={C.cyan} act={act} />
+      <group ref={sway} position={[0, 0.2, 0]} scale={1.2}>
+        {/* rail behind the pedestals, with a light strip and moving work items */}
+        <Plate index={PROC} seed={490} delay={0} from={[0, 3, 0]} spin={0} position={[0, -0.55, -0.6]}>
+          <mesh material={chrome}>
+            <boxGeometry args={[5.2, 0.07, 0.07]} />
+          </mesh>
+          <mesh material={railGlow} position={[0, -0.05, 0]}>
+            <boxGeometry args={[5.0, 0.012, 0.012]} />
+          </mesh>
+        </Plate>
+        {[0, 1, 2].map((j) => (
+          <mesh key={j} ref={(m) => void (packets.current[j] = m)} material={packetMat} position={[0, -0.5, -0.6]}>
+            <sphereGeometry args={[1, 10, 10]} />
+          </mesh>
+        ))}
+        {PROCESS.map((p, i) => (
+          <group key={p.n} ref={(g) => void (pedestals.current[i] = g)} position={[STEP_X[i], -0.85, 0]}>
+            <Plate index={PROC} seed={480 + i} delay={0.05 + i * 0.06} from={[0, -3, 0]} spin={0.05} spark={p.color}>
+              <mesh material={gun} position={[0, 0.11, 0]}>
+                <cylinderGeometry args={[0.5, 0.56, 0.22, 6]} />
+              </mesh>
+              <mesh material={chrome} position={[0, 0.235, 0]}>
+                <cylinderGeometry args={[0.44, 0.44, 0.03, 6]} />
+              </mesh>
+              <mesh ref={(m) => void (rings.current[i] = m)} material={glows[i]} position={[0, 0.255, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[0.36, 0.012, 6, 48]} />
+              </mesh>
+            </Plate>
+            <group ref={(g) => void (exhibits.current[i] = g)} position={[0, 0.42, 0]}>
+              <Exhibit i={i} glow={glows[i]} spin={spins[i]} />
+            </group>
+          </group>
+        ))}
+        {tier > 0 && (
+          <Plate index={PROC} seed={495} delay={0.5} position={[0, 2.0, -0.3]}>
+            <mesh material={chrome}>
+              <torusGeometry args={[0.16, 0.02, 8, 32]} />
+            </mesh>
+          </Plate>
+        )}
+        <Callout index={PROC} position={[-2.1, 1.35, 0]} title="DISCOVER → OPERATE" text="Hover a step, the robot presents it" color={C.cyan} />
+      </group>
+    </>
+  );
+}
+
+/* ───────────── 06 · Toolbelt: a gyroscope of tech, one ring per group ───────────── */
+const STK = 6;
+const RINGS = [
+  { r: 1.4, tilt: [0.55, 0, 0.25] as const, speed: 0.3 },
+  { r: 1.9, tilt: [-0.35, 0.7, 0.1] as const, speed: -0.22 },
+  { r: 2.4, tilt: [0.2, -0.4, 0.95] as const, speed: 0.17 },
+];
+
+/** A bead on a ring with a label that fades in as the station arrives and dims when another ring is picked. */
+function Orb({ ring, radius, angle, label, color, seed }: { ring: number; radius: number; angle: number; label: string; color: string; seed: number }) {
+  const { chrome } = useMetals();
+  const ref = useRef<HTMLSpanElement>(null);
+  useFrame(() => {
+    const el = ref.current;
+    if (!el) return;
+    const h = store.hoveredRing;
+    el.style.opacity = String(THREE.MathUtils.smoothstep(activity(STK), 0.55, 0.9) * (h === -1 || h === ring ? 1 : 0.15));
+  });
+  return (
+    <group position={[Math.cos(angle) * radius, 0, Math.sin(angle) * radius]}>
+      <Plate index={STK} seed={seed} delay={0.25 + ring * 0.1} spread={3}>
+        <mesh material={chrome}>
+          <sphereGeometry args={[0.055, 14, 12]} />
+        </mesh>
+      </Plate>
+      <Html portal={htmlLayer} center position={[0, 0.17, 0]} zIndexRange={[15, 0]} style={{ pointerEvents: "none" }}>
+        <span ref={ref} className="orb" style={{ opacity: 0, ["--c" as string]: color }}>
+          {label}
+        </span>
+      </Html>
+    </group>
+  );
+}
+
+export function StackStation({ tier }: { tier: Tier }) {
+  const { gun, chrome } = useMetals();
+  const sway = useSway(STK, 0.2, 0.35);
+  const glows = STACK.map((g) => useGlow(g.color, STK, 2.5)); // eslint-disable-line react-hooks/rules-of-hooks
+  const coreGlow = useGlow("#ffffff", STK, 1.6);
+  const spins = useRef<(THREE.Group | null)[]>([]);
+  const gimbal = useRef<THREE.Group>(null);
+  const core = useRef<THREE.Group>(null);
+  const at = useMemo(() => new THREE.Vector3(), []);
+
+  // Watches the gyroscope; a picked ring gets both arms and a bounce, otherwise the odd wave.
+  const act: Act = useMemo(
+    () => (rig, { t }) => {
+      core.current?.getWorldPosition(at);
+      const p = rig.pose;
+      p.look = at;
+      if (store.hoveredRing >= 0) {
+        rig.faceYaw = headingTo(rig, at, 1.0);
+        aim(rig, "l", at);
+        aim(rig, "r", at);
+        p.gripL = p.gripR = 0.9;
+        p.eyes = 1.25;
+        p.brows = 0.5;
+        p.bounce = 0.15;
+      } else if (Math.sin(t * 0.5) < -0.8) {
+        p.look = null;
+        p.rPitch = -2.0;
+        p.rYaw = 0.35 + Math.sin(t * 11) * 0.3;
+        p.brows = 0.5;
+      } else p.brows = 0.15;
+    },
+    [at],
+  );
+
+  useFrame(({ clock }, dt) => {
+    const t = clock.elapsedTime;
+    const h = store.hoveredRing;
+    spins.current.forEach((g, i) => {
+      if (!g) return;
+      const k = (g.userData.k = damp(g.userData.k ?? 0, h === i ? 1 : 0, 6, dt));
+      const other = h !== -1 && h !== i ? 0.3 : 1;
+      g.rotation.y += dt * RINGS[i].speed * (1 + k * 2.5) * other * (1 + Math.abs(store.vel) * 3);
+      g.scale.setScalar(1 + k * 0.06);
+    });
+    if (gimbal.current) {
+      gimbal.current.rotation.x = Math.sin(t * 0.21) * 0.12;
+      gimbal.current.rotation.z = Math.cos(t * 0.17) * 0.1;
+    }
+    if (core.current) core.current.rotation.y -= dt * 0.6;
+  });
+
+  const per = tier === 0 ? 4 : 6;
+  return (
+    <>
+      <Robot index={STK} home={[-1.4, -2.1, 2.0]} enter={[4.5, 0, 0.4]} faceYaw={0.5} accent={C.violet} act={act} />
+      <group ref={sway} position={[0, 0.3, 0]}>
+        <group ref={gimbal}>
+          <group ref={core}>
+            <Plate index={STK} seed={610} delay={0}>
+              <mesh material={chrome}>
+                <icosahedronGeometry args={[0.36, 1]} />
+              </mesh>
+            </Plate>
+            <mesh material={coreGlow}>
+              <octahedronGeometry args={[0.2, 0]} />
+            </mesh>
+          </group>
+          {RINGS.map((r, i) => (
+            <group key={i} rotation={[...r.tilt]}>
+              <group ref={(g) => void (spins.current[i] = g)}>
+                <Plate index={STK} seed={620 + i * 5} delay={0.1 + i * 0.1} spread={5} spin={0.4}>
+                  <mesh material={i % 2 ? chrome : gun} rotation={[Math.PI / 2, 0, 0]}>
+                    <torusGeometry args={[r.r, 0.02, 10, 96]} />
+                  </mesh>
+                  <mesh material={glows[i]} rotation={[Math.PI / 2, 0, 0]}>
+                    <torusGeometry args={[r.r + 0.035, 0.006, 6, 96]} />
+                  </mesh>
+                </Plate>
+                {STACK[i].items.slice(0, per).map((label, k) => (
+                  <Orb key={label} ring={i} radius={r.r} angle={(k / per) * Math.PI * 2} label={label} color={STACK[i].color} seed={640 + i * 10 + k} />
+                ))}
+              </group>
+            </group>
+          ))}
+        </group>
+        <Callout index={STK} position={[-1.6, 2.5, 0]} title="TOOLBELT" text="Three rings: UI, data, operations" color={C.violet} align="left" />
+      </group>
+    </>
+  );
+}
+
+/* ───────────── 07 · Contact: an armoured portal ───────────── */
+const CONTACT = 7;
 const HORIZON_VERT = /* glsl */ `
 varying vec2 vUv;
 void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
 `;
 const HORIZON_FRAG = /* glsl */ `
-uniform float uTime; uniform float uAmp; uniform vec3 uA; uniform vec3 uB;
+uniform float uTime; uniform float uAmp; uniform vec3 uA; uniform vec3 uB; uniform vec3 uAL; uniform vec3 uBL; uniform float uLight;
 varying vec2 vUv;
 void main() {
   vec2 p = vUv * 2.0 - 1.0;
@@ -689,15 +1016,23 @@ void main() {
   float ripple = sin(r * 30.0 - uTime * 6.0) * 0.5 + 0.5;
   vec3 col = mix(uA, uB, s1 * s2);
   float body = smoothstep(1.0, 0.0, r);
-  float rim = smoothstep(0.7, 0.97, r) * (1.0 - smoothstep(0.97, 1.0, r));
-  vec3 c = (col * (0.25 + s1 * 0.55 + ripple * 0.15) * body + uA * rim * 1.8) * uAmp;
-  gl_FragColor = vec4(c, 1.0);
+  float rim = smoothstep(0.84, 0.975, r) * (1.0 - smoothstep(0.975, 1.0, r));
+  vec3 c = (col * (0.25 + s1 * 0.55 + ripple * 0.15) * body + mix(uA, vec3(1.0), 0.25) * rim * 1.15) * uAmp;
+  // Painted on the light theme: deeper tones, since nothing can add up to "brighter than the sky".
+  // Colour never fades toward black here (that reads as a gray smudge on white); alpha does the falloff.
+  vec3 cL = mix(uAL, uBL, s1 * s2) * (0.7 + s1 * 0.4 + ripple * 0.12);
+  cL = mix(cL, uAL * 1.25, clamp(rim * 1.4, 0.0, 1.0));
+  c = mix(c, cL, uLight);
+  // Additive on dark (alpha 1); on light it is painted, so coverage comes from the disc shape.
+  float cover = mix(1.0, clamp((smoothstep(0.0, 0.35, body) * 0.92 + rim) * min(uAmp, 1.0), 0.0, 1.0), uLight);
+  gl_FragColor = vec4(c, cover);
 }
 `;
 
 export function ContactStation({ tier }: { tier: Tier }) {
-  const sway = useSway(5, 0.3, 0.4);
-  const glow = useGlow(C.cyan, 5, 3);
+  const light = useTheme() === "light";
+  const sway = useSway(CONTACT, 0.3, 0.4);
+  const glow = useGlow(C.cyan, CONTACT, 3);
   const chevrons = useRef<THREE.Group>(null);
   const tunnel = useRef<(THREE.Mesh | null)[]>([]);
   const mat = useMemo(
@@ -705,7 +1040,7 @@ export function ContactStation({ tier }: { tier: Tier }) {
       new THREE.ShaderMaterial({
         vertexShader: HORIZON_VERT,
         fragmentShader: HORIZON_FRAG,
-        uniforms: { uTime: { value: 0 }, uAmp: { value: 0 }, uA: { value: new THREE.Color(C.cyan) }, uB: { value: new THREE.Color(C.violet) } },
+        uniforms: { uTime: { value: 0 }, uAmp: { value: 0 }, uA: { value: new THREE.Color(C.cyan) }, uB: { value: new THREE.Color(C.violet) }, uAL: { value: new THREE.Color("#0e7490") }, uBL: { value: new THREE.Color("#5b21b6") }, uLight: { value: 0 } },
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -713,9 +1048,10 @@ export function ContactStation({ tier }: { tier: Tier }) {
     [],
   );
   useEffect(() => () => mat.dispose(), [mat]);
+  mat.blending = light ? THREE.NormalBlending : THREE.AdditiveBlending;
   const portal = useRef<THREE.Group>(null);
   const cube = useRef<THREE.Mesh>(null);
-  const cubeMat = useGlow(C.cyan, 5, 2.5);
+  const cubeMat = useGlow(C.cyan, CONTACT, 2.5);
   const rigRef = useRef<Rig | null>(null);
   const throwState = useMemo(() => ({ t0: -99, busy: false, from: new THREE.Vector3(), to: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3(), hit: false }), []);
 
@@ -758,7 +1094,7 @@ export function ContactStation({ tier }: { tier: Tier }) {
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    const b = build(5);
+    const b = build(CONTACT);
     // Data cube: held between the claws, then thrown along an arc into the portal.
     const c = cube.current;
     const rig = rigRef.current;
@@ -791,13 +1127,16 @@ export function ContactStation({ tier }: { tier: Tier }) {
       }
     }
     mat.uniforms.uTime.value = t;
+    mat.uniforms.uLight.value = store.light;
     mat.uniforms.uAmp.value = Math.max(0, (b - 0.6) / 0.4) * (1.1 + store.pulse * 2.5);
     // Chevrons light up one by one, like a dial-in sequence.
     chevrons.current?.children.forEach((c, i, all) => {
       const m = (c as THREE.Mesh).material as THREE.MeshBasicMaterial;
       const lit = b > 0.5 + (i / all.length) * 0.45;
-      const blink = (t * 2 - i * 0.3) % 3 < 0.25 ? 2 : 1;
-      m.color.set(C.amber).multiplyScalar(lit ? 3 * blink + store.pulse * 4 : 0.08);
+      // A slow chase around the ring instead of an on/off blink.
+      const chase = 0.5 + 0.5 * Math.cos(t * 1.6 - (i / all.length) * Math.PI * 2);
+      const peak = THREE.MathUtils.lerp(1.4, 0.9, store.light);
+      m.color.set(C.amber).multiplyScalar(lit ? peak * (0.55 + chase * 0.6) + store.pulse * 4 : 0.08);
     });
     tunnel.current.forEach((r, i) => {
       if (r) r.scale.setScalar(1 + Math.sin(t * 2 - i * 0.6) * 0.03 + store.pulse * 0.3);
@@ -807,14 +1146,14 @@ export function ContactStation({ tier }: { tier: Tier }) {
   const segs = tier === 0 ? 12 : 18;
   return (
     <>
-    <Robot index={5} home={[1.1, -2.05, 1.7]} enter={[-4.5, 0, 0.4]} faceYaw={-0.45} accent={C.cyan} act={act} />
+    <Robot index={CONTACT} home={[1.1, -2.05, 1.7]} enter={[-4.5, 0, 0.4]} faceYaw={-0.45} accent={C.cyan} act={act} />
     <mesh ref={cube} material={cubeMat}>
       <boxGeometry args={[1, 1, 1]} />
     </mesh>
     <group ref={sway} position={[0, 0.3, 0]}>
       <group ref={portal} />
-      <SegRing index={5} radius={1.9} count={segs} size={[0.64, 0.34, 0.36]} glow={glow} speed={0} seed={600} spark={C.cyan} />
-      <SegRing index={5} radius={1.6} count={tier === 0 ? 18 : 36} size={[0.12, 0.2, 0.1]} speed={0.3} seed={700} delay={0.3} />
+      <SegRing index={CONTACT} radius={1.9} count={segs} size={[0.64, 0.34, 0.36]} glow={glow} speed={0} seed={600} spark={C.cyan} />
+      <SegRing index={CONTACT} radius={1.6} count={tier === 0 ? 18 : 36} size={[0.12, 0.2, 0.1]} speed={0.3} seed={700} delay={0.3} />
       <group ref={chevrons}>
         {Array.from({ length: 9 }, (_, i) => {
           const a = (i / 9) * Math.PI * 2 + Math.PI / 2;
@@ -834,7 +1173,7 @@ export function ContactStation({ tier }: { tier: Tier }) {
           <torusGeometry args={[1.45 - i * 0.14, 0.012, 6, 64]} />
         </mesh>
       ))}
-      <Callout index={5} position={[0, 2.45, 0]} title="OPEN CHANNEL" text="Send the brief, the robot throws it through" color={C.cyan} />
+      <Callout index={CONTACT} position={[0, 2.45, 0]} title="OPEN CHANNEL" text="Send the brief, the robot throws it through" color={C.cyan} />
     </group>
     </>
   );

@@ -5,26 +5,37 @@ import gsap from "gsap";
 import { READY_EVENT } from "@/lib/store";
 
 const MIN_MS = 900;
+const MARK = "G-FORCE";
 
-/** Skeleton HUD shown while the 3D scene compiles; fades out on the first rendered frames. */
+/** Boot screen while the 3D scene compiles: wordmark, counter, hairline. Wipes upward on the first frames. */
 export default function Loader() {
   const root = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
+  const count = useRef<HTMLSpanElement>(null);
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
     const start = performance.now();
+    const p = { v: 0 };
+    const draw = () => {
+      if (bar.current) bar.current.style.transform = `scaleX(${p.v})`;
+      if (count.current) count.current.textContent = String(Math.round(p.v * 100)).padStart(3, "0");
+    };
     const ctx = gsap.context(() => {
-      gsap.fromTo(bar.current, { scaleX: 0 }, { scaleX: 0.85, duration: 2.2, ease: "power2.out" });
+      gsap.to(p, { v: 0.86, duration: 2.4, ease: "power2.out", onUpdate: draw });
     });
 
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
-      const wait = Math.max(0, MIN_MS - (performance.now() - start));
-      gsap.to(bar.current, { scaleX: 1, duration: 0.3, delay: wait / 1000 });
-      gsap.to(root.current, { opacity: 0, duration: 0.6, delay: wait / 1000 + 0.25, onComplete: () => setGone(true) });
+      const wait = Math.max(0, MIN_MS - (performance.now() - start)) / 1000;
+      ctx.add(() => {
+        gsap
+          .timeline({ delay: wait, onComplete: () => setGone(true) })
+          .to(p, { v: 1, duration: 0.45, ease: "power2.inOut", onUpdate: draw, overwrite: true })
+          .to(root.current, { clipPath: "inset(0 0 100% 0)", duration: 0.9, ease: "expo.inOut" }, "+=0.15");
+      });
     };
 
     window.addEventListener(READY_EVENT, finish);
@@ -38,16 +49,30 @@ export default function Loader() {
 
   if (gone) return null;
   return (
-    <div ref={root} className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-8 bg-void px-8" role="status" aria-label="Loading">
-      <div className="font-mono text-xs uppercase tracking-[0.4em] text-cyanx">G-FORCE · initialising</div>
-      <div className="w-full max-w-md space-y-3">
-        <div className="skeleton h-3 w-2/3" />
-        <div className="skeleton h-3 w-full" />
-        <div className="skeleton h-3 w-5/6" />
-        <div className="skeleton mt-6 h-24 w-full" />
+    <div
+      ref={root}
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-10 bg-void px-8"
+      style={{ clipPath: "inset(0 0 0% 0)" }}
+      role="status"
+      aria-label="Loading"
+    >
+      <div className="load-mark font-mono text-sm font-bold tracking-[0.6em] text-fg" aria-hidden>
+        {MARK.split("").map((c, i) => (
+          <span key={i} style={{ animationDelay: `${0.08 + i * 0.06}s` }}>
+            {c}
+          </span>
+        ))}
       </div>
-      <div className="h-[3px] w-full max-w-md overflow-hidden rounded bg-slate-800">
-        <div ref={bar} className="h-full origin-left bg-gradient-to-r from-cyanx to-violetx" style={{ transform: "scaleX(0)" }} />
+      <div className="w-full max-w-xs">
+        <div className="mb-3 flex items-end justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-faint">
+          <span>Initialising scene</span>
+          <span className="text-2xl font-light tabular-nums tracking-normal text-fg">
+            <span ref={count}>000</span>
+          </span>
+        </div>
+        <div className="h-px w-full bg-line">
+          <div ref={bar} className="h-full origin-left bg-gradient-to-r from-cyanx via-violetx to-pinkx" style={{ transform: "scaleX(0)" }} />
+        </div>
       </div>
     </div>
   );

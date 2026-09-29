@@ -3,7 +3,7 @@
 
 export type Tier = 0 | 1 | 2; // 0 = low power, 1 = balanced, 2 = full
 
-export const STATION_COUNT = 6;
+export const STATION_COUNT = 8;
 export const STATION_SPACING = 16;
 
 export const store = {
@@ -13,11 +13,15 @@ export const store = {
   active: 0, // nearest station index
   mouse: { x: 0, y: 0 }, // -1..1, GSAP-smoothed
   hoveredOffering: -1,
+  hoveredStep: -1, // 05 · How we work: step under the cursor
+  hoveredRing: -1, // 06 · Toolbelt: stack group under the cursor
   pulse: 0, // 0..1 flash, decays (fired on form success)
   intro: 0, // 0..1 boot-up sequence after the first frames
   shake: 0, // 0..1 camera shake, bumped when armour plates lock
   fps: 60,
   tier: 2 as Tier,
+  light: 0, // 0 dark .. 1 light, GSAP-tweened on theme switch
+  ready: false, // first frames are on screen
 };
 
 /** Station-space position: 0 at hero, STATION_COUNT-1 at contact. */

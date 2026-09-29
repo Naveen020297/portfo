@@ -4,13 +4,19 @@ const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // Theme tokens live in globals.css as RGB channels, so opacity modifiers (bg-cyanx/15) still work.
       colors: {
-        void: "#05060a",
-        cyanx: "#22d3ee",
-        violetx: "#8b5cf6",
-        amberx: "#fbbf24",
-        pinkx: "#f472b6",
-        greenx: "#34d399",
+        void: "rgb(var(--bg) / <alpha-value>)",
+        fg: "rgb(var(--fg) / <alpha-value>)",
+        body: "rgb(var(--body) / <alpha-value>)",
+        muted: "rgb(var(--muted) / <alpha-value>)",
+        faint: "rgb(var(--faint) / <alpha-value>)",
+        line: "rgb(var(--line) / <alpha-value>)",
+        cyanx: "rgb(var(--cyan) / <alpha-value>)",
+        violetx: "rgb(var(--violet) / <alpha-value>)",
+        amberx: "rgb(var(--amber) / <alpha-value>)",
+        pinkx: "rgb(var(--pink) / <alpha-value>)",
+        greenx: "rgb(var(--green) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Inter", "sans-serif"],

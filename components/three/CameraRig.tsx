@@ -26,7 +26,8 @@ export default function CameraRig() {
     };
   }, []);
 
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
+    const t = clock.elapsedTime;
     // Velocity = how far the smoothed value lags the raw scroll. Feeds roll/FOV/spin.
     const target = THREE.MathUtils.clamp((store.progress - store.smooth) * (STATION_COUNT - 1) * 1.5, -1, 1);
     store.vel = THREE.MathUtils.damp(store.vel, target, 3, dt);
@@ -43,14 +44,18 @@ export default function CameraRig() {
     p.x += store.mouse.x * 0.5;
     p.y += store.mouse.y * 0.3;
 
-    // Impact shake when armour locks into place.
-    const k = store.shake * 0.09;
-    p.x += (Math.random() - 0.5) * k;
-    p.y += (Math.random() - 0.5) * k;
+    // Handheld drift: slow, incommensurate sines so the frame breathes but never loops visibly.
+    p.x += Math.sin(t * 0.31) * 0.05 + Math.sin(t * 0.57 + 1.7) * 0.025;
+    p.y += Math.sin(t * 0.23 + 0.6) * 0.04 + Math.sin(t * 0.71) * 0.015;
+
+    // Impact shake when armour locks into place: a fast, smooth judder that decays (not per-frame noise).
+    const k = store.shake * 0.05;
+    p.x += (Math.sin(t * 41.3) + Math.sin(t * 27.1 + 2.1) * 0.6) * k;
+    p.y += (Math.sin(t * 37.7 + 0.9) + Math.sin(t * 23.9) * 0.6) * k;
 
     camera.position.copy(p);
     camera.lookAt(l);
-    camera.rotateZ(-store.vel * 0.06 + store.mouse.x * -0.015);
+    camera.rotateZ(-store.vel * 0.06 + store.mouse.x * -0.015 + Math.sin(t * 0.19) * 0.004 + Math.sin(t * 33.1) * store.shake * 0.006);
 
     const fov = 50 + Math.abs(store.vel) * 9 + store.pulse * 8;
     if (Math.abs(camera.fov - fov) > 0.01) {
