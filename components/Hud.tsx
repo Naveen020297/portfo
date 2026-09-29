@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Activity, Gauge } from "lucide-react";
 import { STATIONS } from "@/lib/content";
 import { STATION_COUNT, store } from "@/lib/store";
+import ThemeToggle from "./ThemeToggle";
 
 const TIER_LABEL = ["LOW", "BALANCED", "FULL"];
 
@@ -40,23 +41,26 @@ export default function Hud() {
   const go = (i: number) => document.getElementById(`s-${i}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-30 font-mono text-[11px] uppercase tracking-widest text-slate-400">
+    <div className="pointer-events-none fixed inset-0 z-30 font-mono text-[11px] uppercase tracking-widest text-muted">
       <header className="pointer-events-auto flex items-center justify-between px-5 py-4 md:px-10">
-        <button onClick={() => go(0)} className="flex items-center gap-2 text-sm font-bold tracking-[0.3em] text-white">
-          <span className="inline-block h-2 w-2 rounded-full bg-cyanx shadow-[0_0_12px_#22d3ee]" />
+        <button onClick={() => go(0)} className="flex items-center gap-2 text-sm font-bold tracking-[0.3em] text-fg">
+          <span className="inline-block h-2 w-2 rounded-full bg-cyanx shadow-[0_0_12px_rgb(var(--cyan))]" />
           G-FORCE
         </button>
-        <button onClick={() => go(STATION_COUNT - 1)} className="rounded border border-cyanx/50 px-3 py-1.5 text-cyanx transition hover:bg-cyanx hover:text-black">
-          Start a project
-        </button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <button onClick={() => go(STATION_COUNT - 1)} className="rounded border border-cyanx/50 px-3 py-1.5 text-cyanx transition hover:bg-cyanx hover:text-void">
+            Start a project
+          </button>
+        </div>
       </header>
 
       {/* Station rail */}
       <nav className="pointer-events-auto absolute right-3 top-1/2 hidden -translate-y-1/2 flex-col items-end gap-3 md:flex" aria-label="Stations">
         {STATIONS.map((s, i) => (
           <button key={s.id} onClick={() => go(i)} className="group flex items-center gap-3" aria-label={s.label} aria-current={active === i}>
-            <span className={`transition ${active === i ? "text-white opacity-100" : "opacity-0 group-hover:opacity-100"}`}>{s.label}</span>
-            <span className={`h-2 rounded-full transition-all ${active === i ? "w-6 bg-cyanx shadow-[0_0_10px_#22d3ee]" : "w-2 bg-slate-600 group-hover:bg-slate-300"}`} />
+            <span className={`transition ${active === i ? "text-fg opacity-100" : "opacity-0 group-hover:opacity-100"}`}>{s.label}</span>
+            <span className={`h-2 rounded-full transition-all ${active === i ? "w-6 bg-cyanx shadow-[0_0_10px_rgb(var(--cyan))]" : "w-2 bg-faint/60 group-hover:bg-muted"}`} />
           </button>
         ))}
       </nav>
@@ -67,23 +71,23 @@ export default function Hud() {
             <div className="text-cyanx">
               Station {STATIONS[active].code}/{String(STATION_COUNT - 1).padStart(2, "0")}
             </div>
-            <div className="text-white">{STATIONS[active].label}</div>
+            <div className="text-fg">{STATIONS[active].label}</div>
           </div>
           <div className="flex gap-5 text-right">
             <span className="flex items-center gap-1.5">
               <Gauge size={13} className="text-pinkx" />
-              <span ref={g} className="text-white">1.0</span> G
+              <span ref={g} className="text-fg">1.0</span> G
             </span>
             <span className="hidden items-center gap-1.5 sm:flex">
               <Activity size={13} className="text-greenx" />
-              <span ref={fps} className="text-white">60</span> FPS
+              <span ref={fps} className="text-fg">60</span> FPS
             </span>
             <span className="hidden sm:inline">
-              GFX <span ref={tier} className="text-white">FULL</span>
+              GFX <span ref={tier} className="text-fg">FULL</span>
             </span>
           </div>
         </div>
-        <div className="h-[2px] w-full bg-slate-800">
+        <div className="h-[2px] w-full bg-line/60">
           <div ref={bar} className="h-full origin-left bg-gradient-to-r from-cyanx via-violetx to-pinkx" style={{ transform: "scaleX(0)" }} />
         </div>
       </footer>

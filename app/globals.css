@@ -2,34 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═════════════ theme tokens (RGB channels, consumed by tailwind.config.ts) ═════════════ */
 :root {
   color-scheme: dark;
+  --bg: 5 6 10;
+  --fg: 255 255 255;
+  --body: 203 213 225;
+  --muted: 148 163 184;
+  --faint: 100 116 139;
+  --line: 51 65 85;
+  --cyan: 34 211 238;
+  --violet: 139 92 246;
+  --amber: 251 191 36;
+  --pink: 244 114 182;
+  --green: 52 211 153;
+  --panel-a: rgba(8, 12, 24, 0.72);
+  --panel-b: rgba(8, 12, 24, 0.45);
+  --panel-edge: rgba(148, 163, 184, 0.14);
+  --panel-shadow: 0 0 0 transparent;
+  --callout-bg: rgba(5, 8, 16, 0.78);
+  --ink: #fff;
+  --ink-on-accent: #05060a;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: 246 247 249;
+  --fg: 11 15 25;
+  --body: 51 65 85;
+  --muted: 71 85 105;
+  --faint: 100 116 139;
+  --line: 214 219 227;
+  --cyan: 8 145 178;
+  --violet: 124 58 237;
+  --amber: 180 83 9;
+  --pink: 219 39 119;
+  --green: 5 150 105;
+  --panel-a: rgba(255, 255, 255, 0.82);
+  --panel-b: rgba(255, 255, 255, 0.6);
+  --panel-edge: rgba(15, 23, 42, 0.1);
+  --panel-shadow: 0 18px 50px -24px rgba(15, 23, 42, 0.35);
+  --callout-bg: rgba(255, 255, 255, 0.86);
+  --ink: #0b0f19;
+  --ink-on-accent: #fff;
+}
+
+/* Only while switching themes: every colour glides instead of snapping. */
+.theme-anim,
+.theme-anim *,
+.theme-anim *::before,
+.theme-anim *::after {
+  transition:
+    color 0.6s cubic-bezier(0.37, 0, 0.63, 1),
+    background-color 0.6s cubic-bezier(0.37, 0, 0.63, 1),
+    border-color 0.6s cubic-bezier(0.37, 0, 0.63, 1),
+    fill 0.6s ease,
+    stroke 0.6s ease,
+    box-shadow 0.6s ease !important;
+}
+
+/* Theme switch reveal (lib/theme.ts): the new snapshot is clipped by a growing circle, the old one holds still. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 html {
-  background: #05060a;
+  background: rgb(var(--bg));
   scroll-behavior: auto;
 }
 
 body {
-  background: #05060a;
-  color: #e2e8f0;
+  background: rgb(var(--bg));
+  color: rgb(var(--body));
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: #22d3ee55;
+  background: rgb(var(--cyan) / 0.3);
 }
 
 /* Frosted HUD panel with corner brackets */
 .hud-card {
   position: relative;
-  background: linear-gradient(160deg, rgba(8, 12, 24, 0.72), rgba(8, 12, 24, 0.45));
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid var(--panel-edge);
   border-radius: 14px;
+  box-shadow: var(--panel-shadow);
 }
 .hud-card::before,
 .hud-card::after {
@@ -37,7 +100,7 @@ body {
   position: absolute;
   width: 14px;
   height: 14px;
-  border: 2px solid var(--accent, #22d3ee);
+  border: 2px solid var(--accent, rgb(var(--cyan)));
   pointer-events: none;
 }
 .hud-card::before {
@@ -55,12 +118,50 @@ body {
   border-bottom-right-radius: 14px;
 }
 
+/* Cursor spotlight for interactive cards; --mx/--my are written on pointermove. */
+.spot {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+}
+.group:hover > .spot {
+  opacity: 1;
+}
+
 .eyebrow {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.72rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--accent, #22d3ee);
+  color: var(--accent, rgb(var(--cyan)));
+}
+
+/* Scroll cue: a light pulse travelling down a hairline. */
+.scroll-cue {
+  position: relative;
+  width: 1px;
+  height: 44px;
+  overflow: hidden;
+  background: rgb(var(--line));
+}
+.scroll-cue::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent, rgb(var(--cyan)), transparent);
+  animation: cue 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes cue {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
 }
 
 /* 3D callouts (rendered through drei <Html>) */
@@ -97,7 +198,7 @@ body {
   gap: 2px;
   padding: 7px 11px;
   border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
-  background: rgba(5, 8, 16, 0.78);
+  background: var(--callout-bg);
   backdrop-filter: blur(8px);
   border-radius: 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -110,7 +211,11 @@ body {
 .callout-box i {
   font-style: normal;
   font-size: 0.68rem;
-  color: #94a3b8;
+  color: rgb(var(--muted));
+}
+/* Neon accents are too pale on a light page: darken them toward the ink colour. */
+[data-theme="light"] .callout-box b {
+  color: color-mix(in srgb, var(--c) 62%, #0b0f19);
 }
 @keyframes ping {
   70%,
@@ -119,34 +224,168 @@ body {
   }
 }
 
-/* Skeleton shimmer for the loader */
-.skeleton {
-  background: linear-gradient(90deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.22), rgba(148, 163, 184, 0.08));
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
-  border-radius: 8px;
+/* Tech chips (track cards, toolbelt groups) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent, rgb(var(--cyan))) 35%, transparent);
+  background: color-mix(in srgb, var(--accent, rgb(var(--cyan))) 8%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--accent, rgb(var(--cyan))) 80%, var(--ink));
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
-@keyframes shimmer {
-  to {
-    background-position: -200% 0;
+.group:hover .chip {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* 05 · process steps: a numbered rail; the active step's number fills with its colour */
+.step {
+  --c: rgb(var(--cyan));
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.4rem 1fr;
+  gap: 0 0.9rem;
+  padding: 0.6rem 0.9rem;
+  margin-left: -0.9rem;
+  border-radius: 12px;
+  transition: background-color 0.35s ease;
+}
+.step:hover {
+  background: color-mix(in srgb, var(--c) 8%, transparent);
+}
+.step-n {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--c);
+  transition: background-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
+}
+.step:hover .step-n {
+  background: var(--c);
+  color: var(--ink-on-accent, #05060a);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.step + .step::before {
+  content: "";
+  position: absolute;
+  left: calc(0.9rem + 1.2rem);
+  top: -0.35rem;
+  height: 0.35rem;
+  width: 1px;
+  background: rgb(var(--line));
+}
+.step-out {
+  margin-top: 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 75%, var(--ink));
+}
+
+/* 06 · toolbelt: labels orbiting in 3D (drei <Html>) */
+.orb {
+  --c: #22d3ee;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+  background: var(--callout-bg);
+  backdrop-filter: blur(6px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--c) 70%, var(--ink));
+  will-change: opacity;
+}
+.orb::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--c);
+}
+/* Too crowded on a phone-sized orbit; the chips in the text carry the same names. */
+@media (max-width: 767px) {
+  .orb {
+    display: none;
   }
 }
 
-.scanlines::after {
+/* Hero: rotating "we ship" line, each phrase slides up through a mask */
+.ship {
+  display: inline-grid;
+  height: 1.5em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.ship > span {
+  grid-area: 1 / 1;
+}
+
+/* Loader wordmark: letters rise in one by one. */
+.load-mark span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.6em);
+  animation: mark-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes mark-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Film grain: a tiny tiled noise, jittered in steps like real stock. Replaces CRT scanlines. */
+.grain::after {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -50%;
   pointer-events: none;
   z-index: 40;
-  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px);
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1.2 -0.1'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation: grain 0.9s steps(6) infinite;
+}
+[data-theme="light"] .grain::after {
+  opacity: 0.025;
+  mix-blend-mode: multiply;
+}
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -4%); }
+  60% { transform: translate(-4%, -1%); }
+  80% { transform: translate(3%, 3%); }
+  100% { transform: translate(0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .callout-dot,
-  .skeleton {
+  .scroll-cue::after,
+  .grain::after {
     animation: none;
   }
+  .load-mark span {
+    animation-duration: 0s;
+  }
 }
+
 
 /* ═════════════ 3D-mounted screens (components/three/Screens.tsx) ═════════════ */
 .scr {

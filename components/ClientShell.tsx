@@ -12,7 +12,7 @@ const Experience = dynamic(() => import("./Experience"), { ssr: false });
 
 export default function ClientShell() {
   return (
-    <main className="scanlines relative">
+    <main className="grain relative">
       <Experience />
       <ScrollDriver />
       <Telemetry />

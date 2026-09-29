@@ -26,7 +26,7 @@ function Row({ error, label, children }: { error?: string; label: string; childr
     <label className="block">
       <div className="flex items-baseline gap-2">
         <span className="font-mono text-sm text-cyanx">&gt;</span>
-        <span className="font-mono text-[11px] uppercase tracking-widest text-slate-500">{label}</span>
+        <span className="font-mono text-[11px] uppercase tracking-widest text-faint">{label}</span>
         <AnimatePresence>
           {error && (
             <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="font-mono text-[11px] text-pinkx">
@@ -35,12 +35,12 @@ function Row({ error, label, children }: { error?: string; label: string; childr
           )}
         </AnimatePresence>
       </div>
-      <div className="ml-4 border-b border-slate-700 pb-1 transition focus-within:border-cyanx">{children}</div>
+      <div className="ml-4 border-b border-line pb-1 transition focus-within:border-cyanx">{children}</div>
     </label>
   );
 }
 
-const inputCls ="w-full bg-transparent font-mono text-sm text-white placeholder:text-slate-600 outline-none";
+const inputCls ="w-full bg-transparent font-mono text-sm text-fg placeholder:text-faint/70 outline-none";
 
 export default function ContactTerminal() {
   const [v, setV] = useState<Values>({ name: "", email: "", type: "", message: "" });
@@ -76,11 +76,11 @@ export default function ContactTerminal() {
 
   return (
     <form onSubmit={submit} noValidate className="hud-card overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-2.5">
+      <div className="flex items-center gap-2 border-b border-line/70 px-4 py-2.5">
         <span className="h-2.5 w-2.5 rounded-full bg-pinkx" />
         <span className="h-2.5 w-2.5 rounded-full bg-amberx" />
         <span className="h-2.5 w-2.5 rounded-full bg-greenx" />
-        <span className="ml-2 font-mono text-[11px] text-slate-500">gforce@project-request:~$</span>
+        <span className="ml-2 font-mono text-[11px] text-faint">gforce@project-request:~$</span>
       </div>
 
       <div className="space-y-5 p-5">
@@ -94,7 +94,7 @@ export default function ContactTerminal() {
         <div>
           <div className="flex items-baseline gap-2">
             <span className="font-mono text-sm text-cyanx">&gt;</span>
-            <span className="font-mono text-[11px] uppercase tracking-widest text-slate-500">project type</span>
+            <span className="font-mono text-[11px] uppercase tracking-widest text-faint">project type</span>
             {err("type") && <span className="font-mono text-[11px] text-pinkx">{err("type")}</span>}
           </div>
           <div className="ml-4 mt-2 flex flex-wrap gap-2">
@@ -107,7 +107,7 @@ export default function ContactTerminal() {
                   blur("type");
                 }}
                 aria-pressed={v.type === t}
-                className={`rounded border px-2.5 py-1 font-mono text-[11px] transition ${v.type === t ? "border-cyanx bg-cyanx/15 text-cyanx" : "border-slate-700 text-slate-400 hover:border-slate-500"}`}
+                className={`rounded border px-2.5 py-1 font-mono text-[11px] transition ${v.type === t ? "border-cyanx bg-cyanx/15 text-cyanx" : "border-line text-muted hover:border-faint"}`}
               >
                 {t}
               </button>
@@ -120,11 +120,11 @@ export default function ContactTerminal() {
         </Row>
 
         <div className="flex items-center justify-between gap-4 pt-1">
-          <span className="font-mono text-[11px] text-slate-500">{valid ? "[ ready to transmit ]" : "[ awaiting valid input ]"}</span>
+          <span className="font-mono text-[11px] text-faint">{valid ? "[ ready to transmit ]" : "[ awaiting valid input ]"}</span>
           <button
             type="submit"
             disabled={status === "sending"}
-            className="flex items-center gap-2 rounded bg-cyanx px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest text-black transition hover:bg-white disabled:opacity-60"
+            className="flex items-center gap-2 rounded bg-cyanx px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest text-void transition hover:bg-fg disabled:opacity-60"
           >
             {status === "sending" ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             {status === "sending" ? "Sending" : "Transmit"}
