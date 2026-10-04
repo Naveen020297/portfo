@@ -13,3 +13,11 @@ export const SITE_THEME: SiteTheme = process.env.NEXT_PUBLIC_SITE_THEME === "spa
  * Hidden for now; set to true to bring it back. The scene itself lives in components/studio/three.
  */
 export const HERO_SCENE = false;
+
+/**
+ * Whether to show direct contact channels (email, phone, WhatsApp) at the bottom / footer.
+ * Defaults to false unless NEXT_PUBLIC_SHOW_DIRECT_CONTACT=true or NEXT_PUBLIC_SHOW_CONTACT=true in .env.
+ */
+export const SHOW_DIRECT_CONTACT =
+  process.env.NEXT_PUBLIC_SHOW_DIRECT_CONTACT === "true" || process.env.NEXT_PUBLIC_SHOW_CONTACT === "true";
+

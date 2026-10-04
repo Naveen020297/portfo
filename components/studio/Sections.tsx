@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { ChevronRight, Mail, Phone } from "lucide-react";
 import { COMPARE, LINEUP, NEXT_STEPS, PROCESS, SHIP } from "@/lib/content";
-import { HERO_SCENE } from "@/lib/site";
+import { HERO_SCENE, SHOW_DIRECT_CONTACT } from "@/lib/site";
 import ContactForm from "./ContactForm";
 
 function WhatsAppIcon({ size = 16, className = "" }: { size?: number; className?: string }) {
@@ -225,34 +225,36 @@ export default function Sections() {
               </ol>
             </div>
 
-            <motion.div variants={item} className="mt-8 border-t border-line/70 pt-6">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted">Direct channels</div>
-              <div className="mt-3 flex flex-wrap gap-2.5">
-                <a
-                  href="mailto:naveensuresh321@gmail.com"
-                  className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-fg shadow-sm transition hover:border-link hover:text-link"
-                >
-                  <Mail size={15} className="text-muted" />
-                  naveensuresh321@gmail.com
-                </a>
-                <a
-                  href="https://wa.me/918904181356"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-300"
-                >
-                  <WhatsAppIcon size={16} />
-                  WhatsApp
-                </a>
-                <a
-                  href="tel:+918904181356"
-                  className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-fg shadow-sm transition hover:border-link hover:text-link"
-                >
-                  <Phone size={15} className="text-muted" />
-                  +91-8904181356
-                </a>
-              </div>
-            </motion.div>
+            {SHOW_DIRECT_CONTACT && (
+              <motion.div variants={item} className="mt-8 border-t border-line/70 pt-6">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted">Direct channels</div>
+                <div className="mt-3 flex flex-wrap gap-2.5">
+                  <a
+                    href="mailto:naveensuresh321@gmail.com"
+                    className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-fg shadow-sm transition hover:border-link hover:text-link"
+                  >
+                    <Mail size={15} className="text-muted" />
+                    naveensuresh321@gmail.com
+                  </a>
+                  <a
+                    href="https://wa.me/918904181356"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-300"
+                  >
+                    <WhatsAppIcon size={16} />
+                    WhatsApp
+                  </a>
+                  <a
+                    href="tel:+918904181356"
+                    className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-fg shadow-sm transition hover:border-link hover:text-link"
+                  >
+                    <Phone size={15} className="text-muted" />
+                    +91-8904181356
+                  </a>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
           <ContactForm />
         </div>
@@ -263,20 +265,22 @@ export default function Sections() {
           <span>
             <span className="font-semibold text-fg">G-Force</span> · Full-stack, mobile and systems engineering
           </span>
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <a href="mailto:naveensuresh321@gmail.com" className="inline-flex items-center gap-1.5 text-fg transition hover:text-link">
-              <Mail size={14} className="text-muted" />
-              <span>naveensuresh321@gmail.com</span>
-            </a>
-            <a href="https://wa.me/918904181356" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-medium text-emerald-600 transition hover:text-emerald-700">
-              <WhatsAppIcon size={14} />
-              <span>WhatsApp</span>
-            </a>
-            <a href="tel:+918904181356" className="inline-flex items-center gap-1.5 text-fg transition hover:text-link">
-              <Phone size={14} className="text-muted" />
-              <span>+91-8904181356</span>
-            </a>
-          </div>
+          {SHOW_DIRECT_CONTACT && (
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <a href="mailto:naveensuresh321@gmail.com" className="inline-flex items-center gap-1.5 text-fg transition hover:text-link">
+                <Mail size={14} className="text-muted" />
+                <span>naveensuresh321@gmail.com</span>
+              </a>
+              <a href="https://wa.me/918904181356" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-medium text-emerald-600 transition hover:text-emerald-700">
+                <WhatsAppIcon size={14} />
+                <span>WhatsApp</span>
+              </a>
+              <a href="tel:+918904181356" className="inline-flex items-center gap-1.5 text-fg transition hover:text-link">
+                <Phone size={14} className="text-muted" />
+                <span>+91-8904181356</span>
+              </a>
+            </div>
+          )}
           <a href="#top" className="hover:text-fg">
             Back to top
           </a>

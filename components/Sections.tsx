@@ -4,6 +4,7 @@ import { useEffect, useState, type ComponentType, type PointerEvent, type ReactN
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { Bell, Boxes, Database, Globe, KeyRound, Layers, Mail, Phone, Radar, Server, Smartphone, Zap } from "lucide-react";
 import { ENGAGEMENT, NEXT_STEPS, OFFERINGS, PROCESS, SHIP, STACK } from "@/lib/content";
+import { SHOW_DIRECT_CONTACT } from "@/lib/site";
 import { READY_EVENT, store } from "@/lib/store";
 import ContactTerminal from "./ContactTerminal";
 
@@ -368,20 +369,22 @@ export default function Sections() {
           </motion.ol>
 
           {/* Direct channels */}
-          <motion.div variants={item} className="mt-6 flex flex-wrap items-center gap-3 border-t border-line/70 pt-4 font-mono text-xs">
-            <a href="mailto:naveensuresh321@gmail.com" className="flex items-center gap-2 rounded border border-line bg-void/60 px-3 py-1.5 text-muted transition hover:border-cyanx hover:text-cyanx">
-              <Mail size={13} className="text-cyanx" />
-              <span>naveensuresh321@gmail.com</span>
-            </a>
-            <a href="https://wa.me/918904181356" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded border border-greenx/40 bg-greenx/10 px-3 py-1.5 text-greenx transition hover:bg-greenx/20">
-              <WhatsAppIcon size={14} />
-              <span>WhatsApp</span>
-            </a>
-            <a href="tel:+918904181356" className="flex items-center gap-2 rounded border border-line bg-void/60 px-3 py-1.5 text-muted transition hover:border-pinkx hover:text-pinkx">
-              <Phone size={13} className="text-pinkx" />
-              <span>+91-8904181356</span>
-            </a>
-          </motion.div>
+          {SHOW_DIRECT_CONTACT && (
+            <motion.div variants={item} className="mt-6 flex flex-wrap items-center gap-3 border-t border-line/70 pt-4 font-mono text-xs">
+              <a href="mailto:naveensuresh321@gmail.com" className="flex items-center gap-2 rounded border border-line bg-void/60 px-3 py-1.5 text-muted transition hover:border-cyanx hover:text-cyanx">
+                <Mail size={13} className="text-cyanx" />
+                <span>naveensuresh321@gmail.com</span>
+              </a>
+              <a href="https://wa.me/918904181356" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded border border-greenx/40 bg-greenx/10 px-3 py-1.5 text-greenx transition hover:bg-greenx/20">
+                <WhatsAppIcon size={14} />
+                <span>WhatsApp</span>
+              </a>
+              <a href="tel:+918904181356" className="flex items-center gap-2 rounded border border-line bg-void/60 px-3 py-1.5 text-muted transition hover:border-pinkx hover:text-pinkx">
+                <Phone size={13} className="text-pinkx" />
+                <span>+91-8904181356</span>
+              </a>
+            </motion.div>
+          )}
         </motion.div>
       </Station>
     </div>
