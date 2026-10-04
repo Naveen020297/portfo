@@ -4,7 +4,7 @@ import { Component, type ReactNode } from "react";
 import { READY_EVENT } from "@/lib/store";
 
 /** If WebGL is unavailable or the scene throws, fall back to a static backdrop and unblock the loader. */
-export default class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+export default class ErrorBoundary extends Component<{ children: ReactNode; fallback?: ReactNode }, { failed: boolean }> {
   state = { failed: false };
 
   static getDerivedStateFromError() {
@@ -18,6 +18,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, { 
 
   render() {
     if (this.state.failed) {
+      if (this.props.fallback !== undefined) return this.props.fallback;
       return <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_30%_20%,#1e1b4b,#05060a_60%)]" aria-hidden />;
     }
     return this.props.children;

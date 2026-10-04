@@ -17,6 +17,9 @@ const config: Config = {
         amberx: "rgb(var(--amber) / <alpha-value>)",
         pinkx: "rgb(var(--pink) / <alpha-value>)",
         greenx: "rgb(var(--green) / <alpha-value>)",
+        // Studio site only (see :root[data-site="studio"]).
+        tile: "rgb(var(--tile) / <alpha-value>)",
+        link: "rgb(var(--link) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Inter", "sans-serif"],

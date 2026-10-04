@@ -1,24 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Loader2, Send, TriangleAlert } from "lucide-react";
-import { PROJECT_TYPES } from "@/lib/content";
+import { COUNTRIES, countryOf } from "@/lib/contact";
 import { store } from "@/lib/store";
-
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type Values = { name: string; email: string; type: string; message: string };
-type Errors = Partial<Record<keyof Values, string>>;
-
-const validate = (v: Values): Errors => {
-  const e: Errors = {};
-  if (v.name.trim().length < 2) e.name = "name must be at least 2 characters";
-  if (!EMAIL.test(v.email.trim())) e.email = "enter a valid email address";
-  if (!v.type) e.type = "pick a project type";
-  if (v.message.trim().length < 20) e.message = `describe the project (${v.message.trim().length}/20 chars)`;
-  return e;
-};
+import { useContactForm } from "@/lib/useContactForm";
 
 // Top-level on purpose: a component defined inside render remounts every keystroke and drops focus.
 function Row({ error, label, children }: { error?: string; label: string; children: React.ReactNode }) {
@@ -43,36 +29,9 @@ function Row({ error, label, children }: { error?: string; label: string; childr
 const inputCls ="w-full bg-transparent font-mono text-sm text-fg placeholder:text-faint/70 outline-none";
 
 export default function ContactTerminal() {
-  const [v, setV] = useState<Values>({ name: "", email: "", type: "", message: "" });
-  const [touched, setTouched] = useState<Partial<Record<keyof Values, boolean>>>({});
-  const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
-  const [note, setNote] = useState("");
-
-  const errors = validate(v);
-  const valid = Object.keys(errors).length === 0;
-  const set = (k: keyof Values, val: string) => setV((s) => ({ ...s, [k]: val }));
-  const blur = (k: keyof Values) => setTouched((t) => ({ ...t, [k]: true }));
-  const err = (k: keyof Values) => (touched[k] && errors[k] ? errors[k] : "");
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setTouched({ name: true, email: true, type: true, message: true });
-    if (!valid) return;
-    setStatus("sending");
-    try {
-      const res = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(v) });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error ?? "Request failed");
-      setStatus("ok");
-      setNote(`Request ${data.id} received. We'll reply within one business day.`);
-      store.pulse = 1; // the tunnel behind flashes
-      setV({ name: "", email: "", type: "", message: "" });
-      setTouched({});
-    } catch (x) {
-      setStatus("error");
-      setNote(x instanceof Error ? x.message : "Something went wrong. Please retry.");
-    }
-  };
+  // On success the tunnel behind flashes.
+  const { v, set, blur, err, valid, status, note, submit } = useContactForm(() => void (store.pulse = 1));
+  const country = countryOf(v.country) ?? COUNTRIES[0];
 
   return (
     <form onSubmit={submit} noValidate className="hud-card overflow-hidden">
@@ -94,28 +53,38 @@ export default function ContactTerminal() {
         <div>
           <div className="flex items-baseline gap-2">
             <span className="font-mono text-sm text-cyanx">&gt;</span>
-            <span className="font-mono text-[11px] uppercase tracking-widest text-faint">project type</span>
-            {err("type") && <span className="font-mono text-[11px] text-pinkx">{err("type")}</span>}
+            <label htmlFor="contact-phone" className="font-mono text-[11px] uppercase tracking-widest text-faint">
+              phone
+            </label>
+            {err("phone") && <span className="font-mono text-[11px] text-pinkx">{err("phone")}</span>}
           </div>
-          <div className="ml-4 mt-2 flex flex-wrap gap-2">
-            {PROJECT_TYPES.map((t) => (
-              <button
-                type="button"
-                key={t}
-                onClick={() => {
-                  set("type", t);
-                  blur("type");
-                }}
-                aria-pressed={v.type === t}
-                className={`rounded border px-2.5 py-1 font-mono text-[11px] transition ${v.type === t ? "border-cyanx bg-cyanx/15 text-cyanx" : "border-line text-muted hover:border-faint"}`}
-              >
-                {t}
-              </button>
-            ))}
+          <div className="ml-4 flex items-center gap-3 border-b border-line pb-1 transition focus-within:border-cyanx">
+            {/* The prefix shows as short text; the real select lies invisibly on top of it. */}
+            <div className="relative shrink-0 font-mono text-sm text-cyanx">
+              <span aria-hidden>{country.iso === "ZZ" ? "other" : `${country.iso} ${country.dial}`} ▾</span>
+              <select aria-label="Country code" value={v.country} onChange={(e) => set("country", e.target.value)} className="absolute inset-0 cursor-pointer opacity-0">
+                {COUNTRIES.map((c) => (
+                  <option key={c.iso} value={c.iso}>
+                    {c.iso === "ZZ" ? "Other country" : `${c.name} (${c.dial})`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <input
+              id="contact-phone"
+              className={inputCls}
+              type="tel"
+              inputMode="tel"
+              value={v.phone}
+              onChange={(e) => set("phone", e.target.value)}
+              onBlur={() => blur("phone")}
+              placeholder={country.example}
+              autoComplete={country.iso === "ZZ" ? "tel" : "tel-national"}
+            />
           </div>
         </div>
 
-        <Row error={err("message")} label="brief">
+        <Row error={err("message")} label="brief (optional)">
           <textarea className={`${inputCls} resize-none`} rows={4} value={v.message} onChange={(e) => set("message", e.target.value)} onBlur={() => blur("message")} placeholder="What are we building, for whom, and by when?" />
         </Row>
 

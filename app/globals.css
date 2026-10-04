@@ -47,6 +47,32 @@
   --ink-on-accent: #fff;
 }
 
+/* Studio site (lib/site.ts): light only. Accents are the deeper shades, which stay legible on white. */
+:root[data-site="studio"] {
+  color-scheme: light;
+  scroll-behavior: smooth;
+  --bg: 255 255 255;
+  --fg: 29 29 31;
+  --body: 66 66 69;
+  --muted: 110 110 115;
+  --faint: 134 134 139;
+  --line: 210 210 215;
+  --tile: 245 245 247;
+  --link: 11 99 214;
+  --cyan: 8 145 178;
+  --violet: 124 58 237;
+  --amber: 180 83 9;
+  --pink: 219 39 119;
+  --green: 5 150 105;
+  --ink: #1d1d1f;
+  --ink-on-accent: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-site="studio"] {
+    scroll-behavior: auto;
+  }
+}
+
 /* Only while switching themes: every colour glides instead of snapping. */
 .theme-anim,
 .theme-anim *,

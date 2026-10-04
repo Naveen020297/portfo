@@ -4,22 +4,12 @@ import { Suspense, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
 import { htmlLayer, type Tier } from "@/lib/store";
+import { detectTier } from "@/lib/tier";
 import Scene from "./three/Scene";
 import ErrorBoundary from "./ErrorBoundary";
 
-/** Picks the starting quality tier. PerformanceMonitor refines it at runtime. */
-function detectTier(): Tier {
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  const cores = nav.hardwareConcurrency ?? 4;
-  const mem = nav.deviceMemory ?? 4;
-  const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduced || cores <= 2 || mem <= 2) return 0;
-  if (coarse || cores <= 4 || mem <= 4) return 1;
-  return 2;
-}
-
 export default function Experience() {
+  // Starting quality tier; PerformanceMonitor refines it at runtime.
   const initial = useRef<Tier>(detectTier());
   const [tier, setTier] = useState<Tier>(initial.current);
 

@@ -1,27 +1,33 @@
 import { NextResponse } from "next/server";
+import { parseContact } from "@/lib/contact";
+import { saveContact } from "@/lib/db";
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// The PostgreSQL client needs Node, not the edge runtime.
+export const runtime = "nodejs";
+
+/** The reference shown to the visitor: time-ordered, with a random tail so two requests in the same millisecond differ. */
+const newReference = () => `REQ-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`.toUpperCase();
 
 export async function POST(req: Request) {
-  let body: Record<string, unknown>;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
 
-  const name = String(body.name ?? "").trim();
-  const email = String(body.email ?? "").trim();
-  const type = String(body.type ?? "").trim();
-  const message = String(body.message ?? "").trim();
+  const parsed = parseContact(body);
+  if (!parsed.ok) return NextResponse.json({ ok: false, error: "Validation failed", errors: parsed.errors }, { status: 422 });
 
-  if (name.length < 2 || !EMAIL.test(email) || !type || message.length < 20) {
-    return NextResponse.json({ ok: false, error: "Validation failed" }, { status: 422 });
+  const id = newReference();
+  try {
+    const stored = await saveContact(id, parsed.value);
+    // Until DATABASE_URL is set the request only reaches the server log.
+    if (!stored) console.warn("[contact] DATABASE_URL is not set: request logged, not stored", { id, ...parsed.value });
+  } catch (error) {
+    console.error("[contact] could not store request", id, error);
+    return NextResponse.json({ ok: false, error: "We could not save your request. Please try again." }, { status: 500 });
   }
-
-  const id = `REQ-${Date.now().toString(36).toUpperCase()}`;
-  // TODO: forward to your inbox / CRM (Resend, SES, Slack webhook...). Logged for now.
-  console.log("[contact]", { id, name, email, type, message });
 
   return NextResponse.json({ ok: true, id });
 }

@@ -92,10 +92,82 @@ export const STACK = [
   { title: "Cloud & Operations", color: "#fbbf24", tone: "amber", items: ["Nginx", "L4 / L7 balancing", "Docker", "CI/CD", "Datadog APM", "TLS"] },
 ] as const;
 
-export const PROJECT_TYPES = ["Mobile app", "Web platform", "Backend / architecture", "DevOps & monitoring"] as const;
-
 export const NEXT_STEPS = [
   { title: "Reply within a business day", body: "From a person, with questions." },
   { title: "A 30-minute scoping call", body: "Product, constraints, first release." },
   { title: "A written proposal", body: "Scope, timeline and price, in plain language." },
+] as const;
+
+/* ───────────── studio site (lib/site.ts) ───────────── */
+
+/** The lineup: one product card per service. `object` picks the 3D model, `color` tints it. */
+export const LINEUP = [
+  {
+    id: "mobile",
+    object: "phone",
+    name: "Mobile App Development",
+    headline: "One codebase. iOS and Android.",
+    body: "Cross-platform apps with React Native: offline sync, native bridging and app store readiness.",
+    features: [
+      { title: "One UI codebase", body: "A single React Native app for iOS and Android." },
+      { title: "Native device APIs", body: "State synchronisation, offline sync and native bridging." },
+      { title: "Store ready", body: "Built and packaged for app store release." },
+    ],
+    stack: ["React Native", "TypeScript", "iOS", "Android"],
+    color: "#0891b2",
+    tone: "cyan",
+  },
+  {
+    id: "web",
+    object: "laptop",
+    name: "Full-Stack Web Systems",
+    headline: "Loads in under a second.",
+    body: "Scalable web apps, admin portals and custom SaaS dashboards on modern React, Angular or Next.js.",
+    features: [
+      { title: "Web frameworks", body: "Production builds on Next.js, React, Angular and fast-bundling Vite apps." },
+      { title: "Delivery standards", body: "Sub-second page loads, seamless navigation and modular component design." },
+      { title: "Portals & dashboards", body: "Admin portals and SaaS dashboards built for daily use." },
+    ],
+    stack: ["Next.js", "React", "Angular", "Vite", "TypeScript"],
+    color: "#7c3aed",
+    tone: "violet",
+  },
+  {
+    id: "backend",
+    object: "server",
+    name: "Backend & System Architecture",
+    headline: "Every tenant isolated. Every action guarded.",
+    body: "Architecture that isolates tenants, guards every action and pushes events in real time.",
+    features: [
+      { title: "Multi-tenant architecture", body: "Separate schemas vs shared pools, dynamic routing and tenant-context middleware." },
+      { title: "Role-based access control", body: "Hierarchical permissions, role inheritance, granular scopes and secure sessions." },
+      { title: "Notification engines", body: "WebSockets, Server-Sent Events and background push queues." },
+      { title: "Migrations & batch workflows", body: "Scheduled workers, idempotent jobs and zero-downtime schema upgrades." },
+    ],
+    stack: ["Node.js", "WebSockets", "SSE", "RBAC", "Multi-tenant", "Queues & cron"],
+    color: "#059669",
+    tone: "green",
+  },
+  {
+    id: "devops",
+    object: "infra",
+    name: "DevOps, Cloud & Monitoring",
+    headline: "A clear view of production.",
+    body: "Fast reads, safe writes, and load balancers, deployment pipelines and monitoring wired up end to end.",
+    features: [
+      { title: "Databases", body: "MySQL, MongoDB and Redis: indexing strategy, connection pooling and caching layers." },
+      { title: "Traffic management", body: "Layer 4 and Layer 7 load balancers, reverse proxy routing and SSL termination." },
+      { title: "Observability", body: "Structured log aggregation, alert dashboards and Datadog APM tracking." },
+    ],
+    stack: ["Nginx", "L4 / L7", "Docker", "CI/CD", "MySQL", "MongoDB", "Redis", "Datadog"],
+    color: "#d97706",
+    tone: "amber",
+  },
+] as const;
+
+/** Engagement models side by side. Same facts as ENGAGEMENT, split into rows. */
+export const COMPARE = [
+  { title: "Fixed scope", best: "A project with a defined brief", get: "A fixed price and a delivery date" },
+  { title: "Retainer", best: "A product that keeps evolving", get: "Reserved monthly capacity" },
+  { title: "Team extension", best: "A team that needs more senior engineers", get: "Engineers embedded in your team, your process and your repo" },
 ] as const;
