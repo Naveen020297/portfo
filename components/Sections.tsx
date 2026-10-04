@@ -2,10 +2,18 @@
 
 import { useEffect, useState, type ComponentType, type PointerEvent, type ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { Bell, Boxes, Database, Globe, KeyRound, Layers, Radar, Server, Smartphone, Zap } from "lucide-react";
+import { Bell, Boxes, Database, Globe, KeyRound, Layers, Mail, Phone, Radar, Server, Smartphone, Zap } from "lucide-react";
 import { ENGAGEMENT, NEXT_STEPS, OFFERINGS, PROCESS, SHIP, STACK } from "@/lib/content";
 import { READY_EVENT, store } from "@/lib/store";
 import ContactTerminal from "./ContactTerminal";
+
+function WhatsAppIcon({ size = 14, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.49 1.34 5L2 22l5.18-1.36a9.96 9.96 0 0 0 4.86 1.26h.01c5.52 0 10-4.48 10-10 0-5.52-4.48-10-10.01-10zm0 18.3c-1.5 0-2.98-.4-4.27-1.16l-.31-.18-3.17.83.85-3.09-.2-.32a8.27 8.27 0 0 1-1.27-4.38c0-4.57 3.73-8.3 8.32-8.3 4.59 0 8.32 3.73 8.32 8.3 0 4.58-3.73 8.3-8.32 8.3zm4.56-6.22c-.25-.13-1.48-.73-1.71-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.75-.67-1.25-1.5-1.4-1.75-.14-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.12-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.71 4.3 3.8.6.26 1.07.41 1.43.53.6.19 1.15.16 1.58.1.48-.07 1.48-.6 1.69-1.19.21-.58.21-1.08.15-1.19-.06-.11-.23-.17-.48-.3z" />
+    </svg>
+  );
+}
 
 type Icon = ComponentType<{ size?: number; className?: string }>;
 
@@ -358,6 +366,22 @@ export default function Sections() {
               </li>
             ))}
           </motion.ol>
+
+          {/* Direct channels */}
+          <motion.div variants={item} className="mt-6 flex flex-wrap items-center gap-3 border-t border-line/70 pt-4 font-mono text-xs">
+            <a href="mailto:naveensuresh321@gmail.com" className="flex items-center gap-2 rounded border border-line bg-void/60 px-3 py-1.5 text-muted transition hover:border-cyanx hover:text-cyanx">
+              <Mail size={13} className="text-cyanx" />
+              <span>naveensuresh321@gmail.com</span>
+            </a>
+            <a href="https://wa.me/918904181356" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded border border-greenx/40 bg-greenx/10 px-3 py-1.5 text-greenx transition hover:bg-greenx/20">
+              <WhatsAppIcon size={14} />
+              <span>WhatsApp</span>
+            </a>
+            <a href="tel:+918904181356" className="flex items-center gap-2 rounded border border-line bg-void/60 px-3 py-1.5 text-muted transition hover:border-pinkx hover:text-pinkx">
+              <Phone size={13} className="text-pinkx" />
+              <span>+91-8904181356</span>
+            </a>
+          </motion.div>
         </motion.div>
       </Station>
     </div>

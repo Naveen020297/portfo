@@ -44,10 +44,10 @@ export default function ContactTerminal() {
 
       <div className="space-y-5 p-5">
         <Row error={err("name")} label="name">
-          <input className={inputCls} value={v.name} onChange={(e) => set("name", e.target.value)} onBlur={() => blur("name")} placeholder="Ada Lovelace" autoComplete="name" />
+          <input className={inputCls} value={v.name} onChange={(e) => set("name", e.target.value)} onBlur={() => blur("name")} placeholder="Gohan" autoComplete="name" />
         </Row>
         <Row error={err("email")} label="email">
-          <input className={inputCls} type="email" value={v.email} onChange={(e) => set("email", e.target.value)} onBlur={() => blur("email")} placeholder="ada@company.com" autoComplete="email" />
+          <input className={inputCls} type="email" value={v.email} onChange={(e) => set("email", e.target.value)} onBlur={() => blur("email")} placeholder="gohan@company.com" autoComplete="email" />
         </Row>
 
         <div>

@@ -31,10 +31,10 @@ export default function ContactForm() {
   return (
     <form onSubmit={submit} noValidate className="space-y-5 rounded-3xl bg-white p-6 md:p-8">
       <Field label="Name" error={err("name")}>
-        <input className={inputCls} value={v.name} onChange={(e) => set("name", e.target.value)} onBlur={() => blur("name")} placeholder="Ada Lovelace" autoComplete="name" />
+        <input className={inputCls} value={v.name} onChange={(e) => set("name", e.target.value)} onBlur={() => blur("name")} placeholder="Gohan" autoComplete="name" />
       </Field>
       <Field label="Email" error={err("email")}>
-        <input className={inputCls} type="email" value={v.email} onChange={(e) => set("email", e.target.value)} onBlur={() => blur("email")} placeholder="ada@company.com" autoComplete="email" />
+        <input className={inputCls} type="email" value={v.email} onChange={(e) => set("email", e.target.value)} onBlur={() => blur("email")} placeholder="gohan@company.com" autoComplete="email" />
       </Field>
 
       <div>

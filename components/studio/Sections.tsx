@@ -2,10 +2,18 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Mail, Phone } from "lucide-react";
 import { COMPARE, LINEUP, NEXT_STEPS, PROCESS, SHIP } from "@/lib/content";
 import { HERO_SCENE } from "@/lib/site";
 import ContactForm from "./ContactForm";
+
+function WhatsAppIcon({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.49 1.34 5L2 22l5.18-1.36a9.96 9.96 0 0 0 4.86 1.26h.01c5.52 0 10-4.48 10-10 0-5.52-4.48-10-10.01-10zm0 18.3c-1.5 0-2.98-.4-4.27-1.16l-.31-.18-3.17.83.85-3.09-.2-.32a8.27 8.27 0 0 1-1.27-4.38c0-4.57 3.73-8.3 8.32-8.3 4.59 0 8.32 3.73 8.32 8.3 0 4.58-3.73 8.3-8.32 8.3zm4.56-6.22c-.25-.13-1.48-.73-1.71-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.75-.67-1.25-1.5-1.4-1.75-.14-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.12-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.71 4.3 3.8.6.26 1.07.41 1.43.53.6.19 1.15.16 1.58.1.48-.07 1.48-.6 1.69-1.19.21-.58.21-1.08.15-1.19-.06-.11-.23-.17-.48-.3z" />
+    </svg>
+  );
+}
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const tone = (t: string) => `rgb(var(--${t}))`;
@@ -133,9 +141,6 @@ function Product({ p, flip }: { p: (typeof LINEUP)[number]; flip: boolean }) {
         <motion.p variants={item} className="mt-6 text-sm text-muted">
           {p.stack.join(" · ")}
         </motion.p>
-        <motion.p variants={item} className="mt-6">
-          <More href="#contact">Start a project</More>
-        </motion.p>
       </motion.div>
     </article>
   );
@@ -192,9 +197,6 @@ export default function Sections() {
                   <dd className="mt-1 text-fg">{c.get}</dd>
                 </div>
               </dl>
-              <p className="mt-6">
-                <More href="#contact">Talk to us</More>
-              </p>
             </motion.div>
           ))}
         </motion.div>
@@ -202,34 +204,79 @@ export default function Sections() {
 
       <section id="contact" className={`scroll-mt-12 ${pad} !pt-0`}>
         <div className="mx-auto grid max-w-6xl gap-8 rounded-[28px] bg-tile p-5 md:grid-cols-2 md:gap-12 md:p-12">
-          <motion.div {...inView} variants={group} className="px-2 pt-4 md:px-0 md:pt-2">
-            <motion.h2 variants={item} className="text-4xl font-semibold tracking-tight text-fg md:text-5xl">
-              Start a project.
-            </motion.h2>
-            <motion.p variants={item} className="mt-4 text-lg text-muted">
-              Tell us what you are building. Here is what happens next.
-            </motion.p>
-            <ol className="mt-8 space-y-5">
-              {NEXT_STEPS.map((n, i) => (
-                <motion.li key={n.title} variants={item} className="flex gap-4">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-sm font-semibold text-fg">{i + 1}</span>
-                  <div>
-                    <div className="font-semibold text-fg">{n.title}</div>
-                    <p className="text-[15px] text-muted">{n.body}</p>
-                  </div>
-                </motion.li>
-              ))}
-            </ol>
+          <motion.div {...inView} variants={group} className="flex flex-col justify-between px-2 pt-4 md:px-0 md:pt-2">
+            <div>
+              <motion.h2 variants={item} className="text-4xl font-semibold tracking-tight text-fg md:text-5xl">
+                Start a project.
+              </motion.h2>
+              <motion.p variants={item} className="mt-4 text-lg text-muted">
+                Tell us what you are building. Here is what happens next.
+              </motion.p>
+              <ol className="mt-8 space-y-5">
+                {NEXT_STEPS.map((n, i) => (
+                  <motion.li key={n.title} variants={item} className="flex gap-4">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-sm font-semibold text-fg">{i + 1}</span>
+                    <div>
+                      <div className="font-semibold text-fg">{n.title}</div>
+                      <p className="text-[15px] text-muted">{n.body}</p>
+                    </div>
+                  </motion.li>
+                ))}
+              </ol>
+            </div>
+
+            <motion.div variants={item} className="mt-8 border-t border-line/70 pt-6">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted">Direct channels</div>
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                <a
+                  href="mailto:naveensuresh321@gmail.com"
+                  className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-fg shadow-sm transition hover:border-link hover:text-link"
+                >
+                  <Mail size={15} className="text-muted" />
+                  naveensuresh321@gmail.com
+                </a>
+                <a
+                  href="https://wa.me/918904181356"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-300"
+                >
+                  <WhatsAppIcon size={16} />
+                  WhatsApp
+                </a>
+                <a
+                  href="tel:+918904181356"
+                  className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-fg shadow-sm transition hover:border-link hover:text-link"
+                >
+                  <Phone size={15} className="text-muted" />
+                  +91-8904181356
+                </a>
+              </div>
+            </motion.div>
           </motion.div>
           <ContactForm />
         </div>
       </section>
 
       <footer className="border-t border-line px-5 py-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 text-xs text-muted md:flex-row md:items-center md:justify-between">
           <span>
             <span className="font-semibold text-fg">G-Force</span> · Full-stack, mobile and systems engineering
           </span>
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <a href="mailto:naveensuresh321@gmail.com" className="inline-flex items-center gap-1.5 text-fg transition hover:text-link">
+              <Mail size={14} className="text-muted" />
+              <span>naveensuresh321@gmail.com</span>
+            </a>
+            <a href="https://wa.me/918904181356" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-medium text-emerald-600 transition hover:text-emerald-700">
+              <WhatsAppIcon size={14} />
+              <span>WhatsApp</span>
+            </a>
+            <a href="tel:+918904181356" className="inline-flex items-center gap-1.5 text-fg transition hover:text-link">
+              <Phone size={14} className="text-muted" />
+              <span>+91-8904181356</span>
+            </a>
+          </div>
           <a href="#top" className="hover:text-fg">
             Back to top
           </a>
